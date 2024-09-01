@@ -32,7 +32,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     setLoading(true);
-    const socketStore = io(`${getSocketBaseUrl()}`, {
+    const socketStore = io(`${getSocketBaseUrl}`, {
       extraHeaders: { authorization: token as string },
       // auth: { accessToken: getFromLocalStorage(authKey) as string },
       //backend--> socket.handshake.headers.authorization; //socket.handshake.auth.token;

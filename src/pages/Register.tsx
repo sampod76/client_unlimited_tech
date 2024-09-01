@@ -1,6 +1,9 @@
 import { Button, Row } from "antd";
 import { FieldValues } from "react-hook-form";
-import { useLoginMutation } from "../redux/features/auth/authApi";
+import {
+  useLoginMutation,
+  useRegisterMutation,
+} from "../redux/features/auth/authApi";
 import { useAppDispatch } from "../redux/hooks";
 import { TUser, setUser } from "../redux/features/auth/authSlice";
 import { verifyToken } from "../utils/verifyToken";
@@ -13,21 +16,21 @@ const Register = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const [login] = useLoginMutation();
+  const [registration, { isLoading }] = useRegisterMutation();
 
   const onSubmit = async (data: FieldValues) => {
     console.log(data);
     const toastId = toast.loading("Logging in");
 
     try {
-      const res = await login(data).unwrap();
+      const res = await registration(data).unwrap();
       console.log("🚀 ~ onSubmit ~ res:", res);
 
       const user = verifyToken(res.data.accessToken) as TUser;
       dispatch(setUser({ user: user, token: res.data.accessToken }));
       toast.success("Logged in", { id: toastId, duration: 2000 });
 
-      if (res.data.needsPasswordChange) {
+      if (res.data?.needsPasswordChange) {
         navigate(`/change-password`);
       } else {
         navigate(`/${user.role}/dashboard`);
@@ -40,22 +43,23 @@ const Register = () => {
 
   return (
     <Row justify="center" align="middle" style={{ height: "100vh" }}>
-      <div
-        style={{
-          padding: "0.5rem",
-          marginBottom: "1rem",
-          borderRadius: "0.25rem",
-          borderWidth: "1px",
-          borderColor: "black",
-        }}
-      >
+      <div className="border p-5 min-w-96">
         <PHForm onSubmit={onSubmit}>
-          <PHInput type="email" name="email" label="Email" />
+          <div className="grid grid-cols-2 gap-2">
+            <PHInput type="text" name="firstName" label="First Name" />
+            <PHInput type="text" name="lastName" label="Last Name" />
+          </div>
+          <PHInput className="-mt-6" type="email" name="email" label="Email" />
           <PHInput type="text" name="password" label="Password" />
-          <Button htmlType="submit">Login</Button>
-          <Button style={{ marginLeft: "15px" }}>
-            <Link to={"/register"}>register</Link>
+
+          <Button htmlType="submit" className="w-full">
+            Register
           </Button>
+          <div className="flex justify-end items-center ">
+            <Link className="my-2 border rounded-md w-fit p-1" to={"/login"}>
+              login
+            </Link>
+          </div>
         </PHForm>
       </div>
     </Row>
