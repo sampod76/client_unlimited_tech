@@ -13,6 +13,8 @@ import {
 } from "react-icons/fa";
 import { MdScreenShare, MdCallEnd, MdCancel } from "react-icons/md";
 import { saveAs } from "file-saver";
+import { useStopwatch } from "react-timer-hook"; // Import the react-timer-hook package
+import dayjs from "dayjs"; // Import the dayjs package for formatting
 
 type MediaType = "video" | "audio";
 
@@ -35,6 +37,20 @@ const RecordRTCApp: React.FC = () => {
   const recorderRef = useRef<RecordRTC | null>(null);
   const liveVideoRef = useRef<HTMLVideoElement | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Timer-related hook from react-timer-hook
+  const { seconds, minutes, hours, start, pause, reset } = useStopwatch({
+    autoStart: false,
+  });
+
+  // Use dayjs for advanced time formatting
+  const formatTime = (): string => {
+    return dayjs()
+      .hour(hours)
+      .minute(minutes)
+      .second(seconds)
+      .format("HH:mm:ss");
+  };
 
   // Fetch the list of available cameras and microphones
   const getAvailableDevices = async () => {
@@ -110,6 +126,7 @@ const RecordRTCApp: React.FC = () => {
       setIsRecording(true);
       setIsScreenSharing(true);
       startCameraStream(); // Start the camera stream in PiP when screen recording starts
+      start(); // Start the stopwatch timer
     } catch (error) {
       console.error("Error starting screen recording:", error);
     }
@@ -146,6 +163,7 @@ const RecordRTCApp: React.FC = () => {
 
   const stopRecording = async () => {
     setIsRecording(false);
+    pause(); // Pause the timer when recording stops
     await recorderRef.current?.stopRecording(() => {
       const blob = recorderRef.current?.getBlob();
       if (blob) {
@@ -156,6 +174,7 @@ const RecordRTCApp: React.FC = () => {
     cameraStream?.getTracks().forEach((track) => track.stop()); // Stop the camera stream too
     setMediaStream(null);
     setCameraStream(null); // Clear the camera stream
+    reset(); // Reset the stopwatch timer
   };
 
   const downloadRecording = () => {
@@ -185,15 +204,17 @@ const RecordRTCApp: React.FC = () => {
     }
   };
 
-  // Pause/Resume recording
+  // Pause/Resume recording and pause the timer
   const togglePauseResumeRecording = () => {
     if (recorderRef.current) {
       if (recorderRef.current.getState() === "paused") {
         recorderRef.current.resumeRecording();
         setIsPaused(false);
+        start(); // Resume the timer when recording is resumed
       } else {
         recorderRef.current.pauseRecording();
         setIsPaused(true);
+        pause(); // Pause the timer when recording is paused
       }
     }
   };
@@ -222,6 +243,24 @@ const RecordRTCApp: React.FC = () => {
               muted
               className="w-40 h-30 bg-black rounded-md absolute bottom-4 right-4 border-2 border-gray-500"
             />
+          )}
+
+          {/* Timer Display */}
+          {isRecording && (
+            <div className="absolute top-4 left-4 bg-gray-800 text-white p-2 rounded">
+              Time Elapsed: {formatTime()}
+            </div>
+          )}
+
+          {/* Animated Recording Icon */}
+          {isRecording && !isPaused && (
+            <div className="absolute top-4 right-4">
+              <div className=" animate-pulse">
+                <p className="text-3xl rounded-full text-red-700 font-extrabold mr-2">
+                  O
+                </p>
+              </div>
+            </div>
           )}
         </div>
 
