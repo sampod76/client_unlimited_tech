@@ -1,11 +1,11 @@
-import { Form } from 'antd';
-import { ReactNode } from 'react';
+import { Form } from "antd";
+import { ReactNode, useEffect } from "react";
 import {
   FieldValues,
   FormProvider,
   SubmitHandler,
   useForm,
-} from 'react-hook-form';
+} from "react-hook-form";
 
 type TFormConfig = {
   defaultValues?: Record<string, any>;
@@ -14,11 +14,13 @@ type TFormConfig = {
 
 type TFormProps = {
   onSubmit: SubmitHandler<FieldValues>;
+  isReset?: any;
   children: ReactNode;
 } & TFormConfig;
 
 const PHForm = ({
   onSubmit,
+  isReset,
   children,
   defaultValues,
   resolver,
@@ -26,19 +28,24 @@ const PHForm = ({
   const formConfig: TFormConfig = {};
 
   if (defaultValues) {
-    formConfig['defaultValues'] = defaultValues;
+    formConfig["defaultValues"] = defaultValues;
   }
 
   if (resolver) {
-    formConfig['resolver'] = resolver;
+    formConfig["resolver"] = resolver;
   }
 
   const methods = useForm(formConfig);
 
   const submit: SubmitHandler<FieldValues> = (data) => {
     onSubmit(data);
-    methods.reset();
   };
+
+  useEffect(() => {
+    if (isReset) {
+      methods.reset();
+    }
+  }, [isReset]);
 
   return (
     <FormProvider {...methods}>

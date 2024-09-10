@@ -66,6 +66,7 @@ const Sidebar = () => {
         theme="dark"
         mode="inline"
         defaultSelectedKeys={["4"]}
+        //@ts-ignore
         items={sidebarItems}
       />
     </Sider>

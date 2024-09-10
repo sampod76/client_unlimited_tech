@@ -1,5 +1,4 @@
 import { IFileAfterUpload, I_STATUS, I_YN } from "./globalType";
-import { IStripeConnectAccount } from "./stripeAccountType";
 
 /* export type IUserGeneralData = {
   status: string;
@@ -34,12 +33,18 @@ export type IAdminCreate = {
 };
 
  */
-export type IGender = 'male' | 'female' | 'other';
-export type I_USER_ROLE = 'admin' | 'superAdmin' | 'employee' | 'generalUser';
+export type IGender = "male" | "female" | "other";
+export enum ENUM_USER_ROLE {
+  admin = "admin",
+  superAdmin = "superAdmin",
+  buyer = "buyer",
+  seller = "seller",
+}
+export type I_USER_ROLE = "admin" | "superAdmin" | "buyer" | "seller";
 export type IUser = {
   _id: string;
   userUniqueId: string;
-  fullName: string;
+  name: { firstName: string; lastName: string };
   email: string;
   role: I_USER_ROLE;
   password: string;
@@ -58,7 +63,7 @@ export type IUser = {
     latitude?: number;
     longitude?: number;
     coordinates: number[]; // first -> longitude,latitude
-    type: string | 'Point';
+    type: string | "Point";
   };
   authentication?: {
     otp: number;
@@ -69,7 +74,7 @@ export type IUser = {
   stripeAccount?: {
     accountNo: string;
     refId?: string;
-    refDetails?: IStripeConnectAccount;
+    refDetails?: Record<string, any>;
   };
   status: I_STATUS;
   isDelete: I_YN;

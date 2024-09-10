@@ -16,6 +16,7 @@ type TProtectedRoute = {
 
 const ProtectedRoute = ({ children, role }: TProtectedRoute) => {
   const token = useAppSelector(useCurrentToken);
+  console.log("🚀 ~ ProtectedRoute ~ token:", token);
 
   let user: any;
 

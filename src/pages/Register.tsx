@@ -11,29 +11,46 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import PHForm from "../components/form/PHForm";
 import PHInput from "../components/form/PHInput";
+import { useAddUsersMutation } from "../redux/features/users/userApi";
+import { useState } from "react";
 
 const Register = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-
-  const [registration, { isLoading }] = useRegisterMutation();
+  const [isReset, setIsReset] = useState(false);
+  const [registration, { isLoading }] = useAddUsersMutation();
 
   const onSubmit = async (data: FieldValues) => {
     console.log(data);
-    const toastId = toast.loading("Logging in");
+    const toastId = toast.loading("Register");
+    const submitDate = {
+      authData: {
+        email: data.email,
+        password: data.password,
+        role: "buyer",
+      },
+      buyer: {
+        name: data.name,
+      },
+    };
 
     try {
-      const res = await registration(data).unwrap();
+      const res = await registration(submitDate).unwrap();
       console.log("🚀 ~ onSubmit ~ res:", res);
+      // const user = verifyToken(res.data.accessToken) as TUser;
+      // dispatch(setUser({ user: user, token: res.data.accessToken }));
+      // toast.success("Logged in", { id: toastId, duration: 2000 });
+      toast.success("User registered successfully", {
+        id: toastId,
+        duration: 2000,
+      });
 
-      const user = verifyToken(res.data.accessToken) as TUser;
-      dispatch(setUser({ user: user, token: res.data.accessToken }));
-      toast.success("Logged in", { id: toastId, duration: 2000 });
-
+      navigate("/login");
+      setIsReset(true);
       if (res.data?.needsPasswordChange) {
         navigate(`/change-password`);
       } else {
-        navigate(`/${user.role}/dashboard`);
+        navigate(`/`);
       }
     } catch (err) {
       console.log("🚀 ~ onSubmit ~ err:", err);
@@ -44,10 +61,10 @@ const Register = () => {
   return (
     <Row justify="center" align="middle" style={{ height: "100vh" }}>
       <div className="border p-5 min-w-96">
-        <PHForm onSubmit={onSubmit}>
+        <PHForm isReset={isReset} onSubmit={onSubmit}>
           <div className="grid grid-cols-2 gap-2">
-            <PHInput type="text" name="firstName" label="First Name" />
-            <PHInput type="text" name="lastName" label="Last Name" />
+            <PHInput type="text" name="name.firstName" label="First Name" />
+            <PHInput type="text" name="name.lastName" label="Last Name" />
           </div>
           <PHInput className="-mt-6" type="email" name="email" label="Email" />
           <PHInput type="text" name="password" label="Password" />

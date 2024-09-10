@@ -24,13 +24,20 @@ const Login = () => {
       console.log("🚀 ~ onSubmit ~ res:", res);
 
       const user = verifyToken(res.data.accessToken) as TUser;
-      dispatch(setUser({ user: user, token: res.data.accessToken }));
+      dispatch(
+        setUser({
+          user: user,
+          userData: res.data.userData,
+          token: res.data.accessToken,
+        })
+      );
       toast.success("Logged in", { id: toastId, duration: 2000 });
 
       if (res.data.needsPasswordChange) {
         navigate(`/change-password`);
       } else {
-        navigate(`/${user.role}/dashboard`);
+        // navigate(`/${user.role}/dashboard`);
+        navigate(`/`);
       }
     } catch (err) {
       console.log("🚀 ~ onSubmit ~ err:", err);

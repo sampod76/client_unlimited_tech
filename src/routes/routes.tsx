@@ -1,57 +1,77 @@
-import { createBrowserRouter } from 'react-router-dom';
-import App from '../App';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import { adminPaths } from './admin.routes';
-import { routeGenerator } from '../utils/routesGenerator';
-import { facultyPaths } from './faculty.routes';
-import { studentPaths } from './student.routes';
-import ProtectedRoute from '../components/layout/ProtectedRoute';
-import ChangePassword from '../pages/ChangePassword';
+import { createBrowserRouter } from "react-router-dom";
+import App from "../App";
+import Login from "../pages/Login";
+import Register from "../pages/Register";
+import { adminPaths } from "./admin.routes";
+import { routeGenerator } from "../utils/routesGenerator";
+import { facultyPaths } from "./faculty.routes";
+import { studentPaths } from "./student.routes";
+import ProtectedRoute from "../components/layout/ProtectedRoute";
+import ChangePassword from "../pages/ChangePassword";
+import Dashboard from "../Dashborad";
+import { buyerPaths } from "./buyer.route";
+import Calling from "../pages/buyer/Calling";
 
 const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <App />,
   },
   {
-    path: '/admin',
+    path: "/admin",
     element: (
       <ProtectedRoute role="admin">
-        <App />
+        <Dashboard />
       </ProtectedRoute>
     ),
     children: routeGenerator(adminPaths),
   },
   {
-    path: '/faculty',
+    path: "/faculty",
     element: (
       <ProtectedRoute role="faculty">
-        <App />
+        <Dashboard />
       </ProtectedRoute>
     ),
     children: routeGenerator(facultyPaths),
   },
   {
-    path: '/student',
+    path: "/student",
     element: (
       <ProtectedRoute role="student">
-        <App />
+        <Dashboard />
       </ProtectedRoute>
     ),
     children: routeGenerator(studentPaths),
   },
   {
-    path: '/login',
+    path: "/user",
+    element: (
+      <ProtectedRoute role="buyer">
+        <Dashboard />
+      </ProtectedRoute>
+    ),
+    children: routeGenerator(buyerPaths),
+  },
+  {
+    path: "/login",
     element: <Login />,
   },
   {
-    path: '/change-password',
+    path: "/calling/:id",
+    element: <Calling />,
+  },
+  {
+    path: "/change-password",
     element: <ChangePassword />,
   },
   {
-    path: '/register',
+    path: "/register",
     element: <Register />,
+  },
+  {
+    path: "*",
+    element: <h1 className="text-center text-5xl"> Not found</h1>,
   },
 ]);
 

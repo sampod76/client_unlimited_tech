@@ -11,6 +11,7 @@ import { RootState } from "../store";
 import { logout, setUser } from "../features/auth/authSlice";
 import { toast } from "sonner";
 import { getBaseUrl } from "../../helpers/config/envConfig";
+import { tagTypesList } from "../tag-types";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: getBaseUrl,
@@ -73,6 +74,6 @@ const baseQueryWithRefreshToken: BaseQueryFn<
 export const baseApi = createApi({
   reducerPath: "baseApi",
   baseQuery: baseQueryWithRefreshToken,
-  tagTypes: ["semester", "courses", "offeredCourse"],
+  tagTypes: tagTypesList,
   endpoints: () => ({}),
 });

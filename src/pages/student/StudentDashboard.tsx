@@ -1,4 +1,4 @@
-const StudentDashboard = () => {
+const BuyerDashboard = () => {
   return (
     <div>
       <h1> This is StudentDashboard component </h1>
@@ -6,4 +6,4 @@ const StudentDashboard = () => {
   );
 };
 
-export default StudentDashboard;
+export default BuyerDashboard;

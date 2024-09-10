@@ -35,7 +35,7 @@ type Idevice_info = {
 
 export type IUserLoginHistory = {
   userId: string;
-  userDetails?: IUser;
+  userData?: IUser;
   user_agent: string;
   ip: string;
   time: string;

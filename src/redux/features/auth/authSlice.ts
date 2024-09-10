@@ -19,7 +19,7 @@ export type TUser = {
   iat: number;
   exp: number;
 };
-export type TUserDetails = {
+export type TuserData = {
   userUniqueId: string;
   // fullName: string;
   name: {
@@ -36,14 +36,14 @@ export type TUserDetails = {
 
 type TAuthState = {
   user: null | TUser;
-  userDetails: null | TUserDetails;
+  userData: null | TuserData;
   token: null | string;
 };
 
 const initialState: TAuthState = {
   user: null,
   token: null,
-  userDetails: null,
+  userData: null,
 };
 
 const authSlice = createSlice({
@@ -51,15 +51,15 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action) => {
-      const { user, userDetails, accessToken } = action.payload;
+      const { user, userData, token } = action.payload;
       state.user = user;
-      state.userDetails = userDetails;
-      state.token = accessToken;
+      state.userData = userData;
+      state.token = token;
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
-      state.userDetails = null;
+      state.userData = null;
     },
   },
 });
