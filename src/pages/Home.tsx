@@ -11,7 +11,7 @@ import {
   FaStop,
   FaDownload,
 } from "react-icons/fa";
-import { MdScreenShare, MdCallEnd } from "react-icons/md";
+import { MdScreenShare, MdCallEnd, MdCancel } from "react-icons/md";
 import { saveAs } from "file-saver";
 
 type MediaType = "video" | "audio";
@@ -20,10 +20,12 @@ const RecordRTCApp: React.FC = () => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [mediaBlobUrl, setMediaBlobUrl] = useState<string | null>(null);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [mediaType, setMediaType] = useState<MediaType | null>(null);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [isCameraOn, setIsCameraOn] = useState<boolean>(true);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isScreenSharing, setIsScreenSharing] = useState<boolean>(false);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<string | null>(null);
@@ -32,6 +34,7 @@ const RecordRTCApp: React.FC = () => {
   );
   const recorderRef = useRef<RecordRTC | null>(null);
   const liveVideoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
 
   // Fetch the list of available cameras and microphones
   const getAvailableDevices = async () => {
@@ -57,10 +60,13 @@ const RecordRTCApp: React.FC = () => {
     if (liveVideoRef.current && mediaStream) {
       liveVideoRef.current.srcObject = mediaStream;
     }
-  }, [mediaStream]);
+    if (cameraVideoRef.current && cameraStream) {
+      cameraVideoRef.current.srcObject = cameraStream;
+    }
+  }, [mediaStream, cameraStream]);
 
-  // Camera recording with selected devices
-  const startCameraRecording = async () => {
+  // Camera recording with selected devices in PiP
+  const startCameraStream = async () => {
     try {
       const constraints = {
         video: {
@@ -72,20 +78,14 @@ const RecordRTCApp: React.FC = () => {
             : undefined,
         },
       };
-      const cameraStream = await navigator.mediaDevices.getUserMedia(
-        constraints
-      );
-      setMediaStream(cameraStream);
-      recorderRef.current = new RecordRTC(cameraStream, { type: "video" });
-      recorderRef.current.startRecording();
-      setMediaType("video");
-      setIsRecording(true);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setCameraStream(stream);
     } catch (error) {
-      console.error("Error starting camera recording:", error);
+      console.error("Error starting camera stream:", error);
     }
   };
 
-  // Screen Recording with or without audio
+  // Screen Recording with Camera in PiP
   const startScreenRecording = async (recordAudio: boolean) => {
     try {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
@@ -108,8 +108,39 @@ const RecordRTCApp: React.FC = () => {
       recorderRef.current.startRecording();
       setMediaType("video");
       setIsRecording(true);
+      setIsScreenSharing(true);
+      startCameraStream(); // Start the camera stream in PiP when screen recording starts
     } catch (error) {
       console.error("Error starting screen recording:", error);
+    }
+  };
+
+  // Stop Screen Share (but continue recording with camera and audio)
+  const stopScreenShare = () => {
+    if (mediaStream) {
+      const videoTrack = mediaStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.stop(); // Stop screen track
+        mediaStream.removeTrack(videoTrack); // Remove screen track from the stream
+        setIsScreenSharing(false);
+      }
+    }
+  };
+
+  // Re-initiate Screen Sharing after it has been stopped
+  const restartScreenSharing = async () => {
+    try {
+      const newScreenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+      });
+      const newScreenTrack = newScreenStream.getVideoTracks()[0];
+      if (mediaStream && recorderRef.current) {
+        mediaStream.addTrack(newScreenTrack); // Add new screen track
+        recorderRef.current.stream = mediaStream; // Update RecordRTC's stream to include new screen track
+        setIsScreenSharing(true);
+      }
+    } catch (error) {
+      console.error("Error restarting screen sharing:", error);
     }
   };
 
@@ -122,7 +153,9 @@ const RecordRTCApp: React.FC = () => {
       }
     });
     mediaStream?.getTracks().forEach((track) => track.stop());
+    cameraStream?.getTracks().forEach((track) => track.stop()); // Stop the camera stream too
     setMediaStream(null);
+    setCameraStream(null); // Clear the camera stream
   };
 
   const downloadRecording = () => {
@@ -144,8 +177,8 @@ const RecordRTCApp: React.FC = () => {
 
   // Toggle camera on/off
   const toggleCamera = () => {
-    if (mediaStream) {
-      mediaStream.getVideoTracks().forEach((track) => {
+    if (cameraStream) {
+      cameraStream.getVideoTracks().forEach((track) => {
         track.enabled = !track.enabled;
       });
       setIsCameraOn(!isCameraOn);
@@ -167,6 +200,118 @@ const RecordRTCApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-white">
+      <div className="bg-gray-800 p-6 shadow-lg rounded-lg w-full max-w-4xl relative">
+        <div className="video-container flex justify-center">
+          {isRecording && mediaType === "video" ? (
+            <video
+              ref={liveVideoRef}
+              autoPlay
+              muted
+              className="w-full h-96 bg-black rounded-md"
+            />
+          ) : (
+            <div className="w-full h-96 bg-black flex items-center justify-center text-lg text-gray-500 rounded-md">
+              No video stream
+            </div>
+          )}
+          {/* Camera in Picture-in-Picture */}
+          {isRecording && cameraStream && (
+            <video
+              ref={cameraVideoRef}
+              autoPlay
+              muted
+              className="w-40 h-30 bg-black rounded-md absolute bottom-4 right-4 border-2 border-gray-500"
+            />
+          )}
+        </div>
+
+        {/* Control Bar */}
+        <div className="control-bar mt-4 flex justify-center space-x-6 py-3 bg-gray-700 rounded-md">
+          {/* Mute/Unmute */}
+          <button onClick={toggleMuteAudio} className="control-button">
+            {isAudioMuted ? (
+              <FaMicrophoneSlash size={24} />
+            ) : (
+              <FaMicrophone size={24} />
+            )}
+          </button>
+
+          {/* Toggle Camera */}
+          <button onClick={toggleCamera} className="control-button">
+            {isCameraOn ? <FaVideo size={24} /> : <FaVideoSlash size={24} />}
+          </button>
+
+          {/* Pause/Resume */}
+          <button
+            onClick={togglePauseResumeRecording}
+            className="control-button"
+          >
+            {isPaused ? <FaPlay size={24} /> : <FaPause size={24} />}
+          </button>
+
+          {/* Stop Recording */}
+          <button onClick={stopRecording} className="control-button">
+            <FaStop size={24} />
+          </button>
+
+          {/* Screen Recording */}
+          {!isRecording && (
+            <button
+              onClick={() => startScreenRecording(true)}
+              className="control-button"
+            >
+              <MdScreenShare size={24} />
+            </button>
+          )}
+
+          {/* Stop Screen Sharing */}
+          {isScreenSharing && (
+            <button
+              onClick={stopScreenShare}
+              className="control-button bg-red-600"
+            >
+              <MdCancel size={24} />
+            </button>
+          )}
+
+          {/* Restart Screen Sharing */}
+          {!isScreenSharing && isRecording && (
+            <button
+              onClick={restartScreenSharing}
+              className="control-button bg-green-600"
+            >
+              <MdScreenShare size={24} />
+            </button>
+          )}
+
+          {/* Download Recording */}
+          {!isRecording && mediaBlobUrl && (
+            <button onClick={downloadRecording} className="control-button">
+              <FaDownload size={24} />
+            </button>
+          )}
+
+          {/* End Call */}
+          <button
+            onClick={stopRecording}
+            className="control-button bg-red-600 hover:bg-red-700 rounded-full p-2"
+          >
+            <MdCallEnd size={24} />
+          </button>
+        </div>
+      </div>
+
+      {/* Media Preview Section */}
+      {!isRecording && mediaBlobUrl && (
+        <div className="mt-4 bg-gray-800 p-4 rounded-md w-full max-w-4xl">
+          <ReactPlayer
+            url={mediaBlobUrl}
+            controls
+            className="w-full h-64 bg-black rounded-md"
+          />
+        </div>
+      )}
+
       {/* Device Selection */}
       <div className="mt-4 flex space-x-4">
         {/* Camera Selection Dropdown */}
@@ -213,88 +358,6 @@ const RecordRTCApp: React.FC = () => {
           </select>
         </div>
       </div>
-      <div className="bg-gray-800 p-6 shadow-lg rounded-lg w-full max-w-4xl relative">
-        <div className="video-container flex justify-center">
-          {isRecording && mediaType === "video" ? (
-            <video
-              ref={liveVideoRef}
-              autoPlay
-              muted
-              className="w-full h-96 bg-black rounded-md"
-            />
-          ) : (
-            <div className="w-full h-96 bg-black flex items-center justify-center text-lg text-gray-500 rounded-md">
-              No video stream
-            </div>
-          )}
-        </div>
-
-        {/* Control Bar */}
-        <div className="control-bar mt-4 flex justify-center space-x-6 py-3 bg-gray-700 rounded-md">
-          {/* Mute/Unmute */}
-          <button onClick={toggleMuteAudio} className="control-button">
-            {isAudioMuted ? (
-              <FaMicrophoneSlash size={24} />
-            ) : (
-              <FaMicrophone size={24} />
-            )}
-          </button>
-
-          {/* Toggle Camera */}
-          <button onClick={toggleCamera} className="control-button">
-            {isCameraOn ? <FaVideo size={24} /> : <FaVideoSlash size={24} />}
-          </button>
-
-          {/* Pause/Resume */}
-          <button
-            onClick={togglePauseResumeRecording}
-            className="control-button"
-          >
-            {isPaused ? <FaPlay size={24} /> : <FaPause size={24} />}
-          </button>
-
-          {/* Stop Recording */}
-          <button onClick={stopRecording} className="control-button">
-            <FaStop size={24} />
-          </button>
-
-          {/* Screen Recording */}
-          {!isRecording && (
-            <button
-              onClick={() => startScreenRecording(true)}
-              className="control-button"
-            >
-              <MdScreenShare size={24} />
-            </button>
-          )}
-
-          {/* Download Recording */}
-          {!isRecording && mediaBlobUrl && (
-            <button onClick={downloadRecording} className="control-button">
-              <FaDownload size={24} />
-            </button>
-          )}
-
-          {/* End Call */}
-          <button
-            onClick={stopRecording}
-            className="control-button bg-red-600 hover:bg-red-700 rounded-full p-2"
-          >
-            <MdCallEnd size={24} />
-          </button>
-        </div>
-      </div>
-
-      {/* Media Preview Section */}
-      {!isRecording && mediaBlobUrl && (
-        <div className="mt-4 bg-gray-800 p-4 rounded-md w-full max-w-4xl">
-          <ReactPlayer
-            url={mediaBlobUrl}
-            controls
-            className="w-full h-64 bg-black rounded-md"
-          />
-        </div>
-      )}
     </div>
   );
 };
